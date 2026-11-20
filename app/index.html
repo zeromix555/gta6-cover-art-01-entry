@@ -3,17 +3,74 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
+<title>Vice Coast Cover Studio</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <main class="app">
   <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
+    <h1>Vice Coast<br>Cover Studio</h1>
+    <p class="tag">Turn your photos into a multi-panel Vice City poster. Offline, free, no upload.</p>
+
+    <fieldset>
+      <legend>Layout</legend>
+      <div class="seg" id="layouts">
+        <button type="button" data-layout="hero3" class="on">Hero + 3</button>
+        <button type="button" data-layout="grid">2 &times; 2 grid</button>
+        <button type="button" data-layout="bleed">Full bleed</button>
+        <button type="button" data-layout="strip">Snapshot strip</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Grade</legend>
+      <div class="seg" id="grades">
+        <button type="button" data-grade="sunset" class="on">Sunset</button>
+        <button type="button" data-grade="neon">Neon nights</button>
+        <button type="button" data-grade="teal">Vice teal</button>
+        <button type="button" data-grade="gold">Golden hour</button>
+        <button type="button" data-grade="noir">Mono noir</button>
+      </div>
+    </fieldset>
+
+    <label>Title
+      <input id="title" type="text" maxlength="32" value="Neon Shore">
+    </label>
+    <label>Subtitle
+      <input id="subtitle" type="text" maxlength="40" value="welcome to Vice Coast">
+    </label>
+
+    <fieldset>
+      <legend>Panel <span id="panelName">1</span> of 4 — photo</legend>
+      <div class="panel-pick" id="panelPick">
+        <button type="button" data-panel="0" class="on">1</button>
+        <button type="button" data-panel="1">2</button>
+        <button type="button" data-panel="2">3</button>
+        <button type="button" data-panel="3">4</button>
+      </div>
+      <label class="file">Upload your photo
+        <input id="photo" type="file" accept="image/*">
+      </label>
+      <div class="samples">
+        <button type="button" data-sample="boulevard">Sample: boulevard</button>
+        <button type="button" data-sample="pier">Sample: pier</button>
+      </div>
+      <label>Zoom <span id="zoomVal">1.15&times;</span>
+        <input id="zoom" type="range" min="1" max="3" step="0.05" value="1.15">
+      </label>
+      <p class="hint">Drag the photo on the canvas to move it. Click a panel to edit it.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Export size</legend>
+      <div class="seg" id="sizes">
+        <button type="button" data-size="1080x1080" class="on">1080 &times; 1080</button>
+        <button type="button" data-size="1080x1350">1080 &times; 1350</button>
+        <button type="button" data-size="1920x1080">1920 &times; 1080</button>
+      </div>
+    </fieldset>
+
+    <button id="export" type="button" class="export">Export PNG</button>
     <p id="status" role="status"></p>
   </section>
   <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
