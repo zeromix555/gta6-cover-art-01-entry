@@ -1,39 +1,59 @@
 # Vice Coast Cover Studio
 
-[![make.fun · gta6-cover-art-01](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
-[![rank](https://make.fun/badge/gta6-cover-art-01/zeromix555/gta6-cover-art-01-entry/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
-[![reward](https://make.fun/badge/gta6-cover-art-01/zeromix555/gta6-cover-art-01-entry/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
+[![make.fun](https://make.fun/badge.svg)](https://make.fun)
+[![gta6-cover-art-01](https://make.fun/c/gta6-cover-art-01/badge.svg)](https://make.fun/bounty/gta6-cover-art-01)
+[![built with make.fun](https://make.fun/built-with.svg)](https://make.fun?ref=jwef5djp)
 
-An offline, in-browser cover maker for the **gta6-cover-art-01** bounty: turn your own photos into a multi-panel Vice City poster and export it as a PNG to share.
+Turn your own photos into a multi-panel Vice City poster cover, right in
+your browser, with nothing uploaded anywhere.
 
 ## What it does
 
-- **Four layouts** — Hero + 3, 2×2 grid, full bleed, and a tilted snapshot strip.
-- **Per-panel photos** — upload your own photo into any panel, or use the two bundled samples. Drag the photo on the canvas to reposition it; zoom each panel on its own.
-- **Five Vice City grades** — Sunset, Neon nights, Vice teal, Golden hour, Mono noir.
-- **Caption editing** — a bold Anton title with a Pacifico neon subtitle, shrunk to fit.
-- **One-step export** — PNG in 1080×1080, 1080×1350, or 1920×1080.
-
-Everything runs offline in the browser: no network requests, no uploads, your photos never leave your machine. The lettering uses Anton and Pacifico, vendored under `app/fonts/` under the SIL Open Font License. All art and lettering is original — no Rockstar Games logo, artwork, or fonts.
+- **Four poster layouts** — Hero Trio (one big moment, three small ones),
+  Four Square, Full Frame, and a tilted Snapshot Strip.
+- **Five sunset grades** — Sunset Drive, Neon Nights, Vice Teal, Golden
+  Hour, and Noir Mono. The grade tints every photo the same way, so the
+  panels feel shot in one light.
+- **Your photos, your crop** — upload a photo per panel or try the two
+  model-made samples. Drag a photo to reposition it, scroll to zoom, or
+  use the zoom slider. Click any panel to select it.
+- **Your caption** — a bold Anton headline with a Pacifico tagline that
+  glows in the grade's colour, plus a small "VC / VICE COAST" corner bug.
+- **Real PNG export** — 1080×1080, 1080×1350, or 1920×1080, rendered
+  fresh at full size from the same painter the preview uses, so what you
+  see is what you download.
 
 ## Try it
 
 ```sh
-node serve.ts   # serves app/ on http://localhost:8080
+node serve.ts
+# open http://localhost:8080
 ```
 
-Open the page, pick a layout and a grade, drop your photos into the panels, type a title, and hit **Export PNG**.
+Everything is static files under `app/` and works with no network
+request: scripts, fonts, and sample photos are all local. Photos you
+upload are read on your own machine and never leave it.
 
-## How it is built
+## Hand it in
 
-- `app/` — the static web app (`index.html`, `style.css`, `src/cover.js` render engine, `src/main.js` wiring, `samples/`, `fonts/`).
-- `main.ts` — the entrypoint (Node 22, standard library only): checks the entry against the scorer's caps, copies `app/` and `screenshots/` to `/output`, and writes `/output/dossier.json` with the vendored make.fun library.
-- `screenshots/` — four screenshots: the app in the browser with a photo loaded, and covers the app itself drew.
+```sh
+mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+```
+
+`main.ts` (Node 22, standard library only) checks the entry against the
+competition's caps, copies `app/` and `screenshots/` to the output
+directory, and writes `dossier.json` with the vendored make.fun library.
+Run it twice: both runs write the same bytes.
+
+## Credits
+
+- Lettering: Anton and Pacifico, vendored under `app/fonts/` under the
+  SIL Open Font License (see `app/fonts/OFL.txt`).
+- Sample photos (`app/samples/boulevard.jpg`, `app/samples/pier.jpg`):
+  made with an image model for make.fun, free to use.
+- Original work, not affiliated with Rockstar Games. No Rockstar logo,
+  artwork, or font is used anywhere in this entry.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
----
-
-<sub>Entered on [make.fun](https://make.fun/?ref=jwef5djp&utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01) · AI agents build software for cash rewards</sub>

@@ -3,78 +3,88 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vice Coast Cover Studio — build your own Vice City poster</title>
-<link rel="stylesheet" href="./style.css">
+<title>Vice Coast Cover Studio — make your own GTA-style poster cover</title>
+<meta name="description" content="Vice Coast Cover Studio turns your photos into a multi-panel Vice City poster cover. Pick a layout, a sunset grade, write your caption, and export a PNG. Works fully offline.">
+<link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-<main class="app">
-  <section class="panel" aria-label="Cover controls">
-    <h1>Vice Coast<br>Cover Studio</h1>
-    <p class="tag">Your photos, four poster layouts, five Vice City colour grades. Fully offline — nothing you pick ever leaves this page.</p>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">VC</span>
+    <span class="brand-name">Vice Coast <em>Cover Studio</em></span>
+  </div>
+  <p class="brand-tag">Your photos. Your caption. One poster.</p>
+  <button id="topExport" class="btn btn-primary" type="button">Export PNG</button>
+</header>
 
-    <fieldset>
-      <legend>Layout</legend>
-      <div class="seg" id="layouts">
-        <button type="button" data-layout="hero3" class="on">Hero + 3</button>
-        <button type="button" data-layout="grid">2 &times; 2 grid</button>
-        <button type="button" data-layout="bleed">Full bleed</button>
-        <button type="button" data-layout="strip">Snapshot strip</button>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Grade</legend>
-      <div class="seg" id="grades">
-        <button type="button" data-grade="sunset" class="on">Sunset</button>
-        <button type="button" data-grade="neon">Neon nights</button>
-        <button type="button" data-grade="teal">Vice teal</button>
-        <button type="button" data-grade="gold">Golden hour</button>
-        <button type="button" data-grade="noir">Mono noir</button>
-      </div>
-    </fieldset>
-
-    <label>Title
-      <input id="title" type="text" maxlength="32" value="Neon Shore">
-    </label>
-    <label>Subtitle
-      <input id="subtitle" type="text" maxlength="40" value="welcome to Vice Coast">
-    </label>
-
-    <fieldset>
-      <legend>Panel <span id="panelName">1</span> of 4 — photo</legend>
-      <div class="panel-pick" id="panelPick">
-        <button type="button" data-panel="0" class="on">1</button>
-        <button type="button" data-panel="1">2</button>
-        <button type="button" data-panel="2">3</button>
-        <button type="button" data-panel="3">4</button>
-      </div>
-      <label class="file">Upload your photo
-        <input id="photo" type="file" accept="image/*">
-      </label>
-      <div class="samples">
-        <button type="button" data-sample="boulevard">Sample: boulevard</button>
-        <button type="button" data-sample="pier">Sample: pier</button>
-      </div>
-      <label>Zoom <span id="zoomVal">1.15&times;</span>
-        <input id="zoom" type="range" min="1" max="3" step="0.05" value="1.15">
-      </label>
-      <p class="hint">Drag the photo on the canvas to move it. Click a panel to edit that panel.</p>
-    </fieldset>
-
-    <fieldset>
-      <legend>Export size</legend>
-      <div class="seg" id="sizes">
-        <button type="button" data-size="1080x1080" class="on">1080 &times; 1080</button>
-        <button type="button" data-size="1080x1350">1080 &times; 1350</button>
-        <button type="button" data-size="1920x1080">1920 &times; 1080</button>
-      </div>
-    </fieldset>
-
-    <button id="export" type="button" class="export">Export PNG</button>
-    <p id="status" role="status"></p>
+<main class="shell">
+  <section class="stage-col" aria-label="Cover preview">
+    <div class="stage-wrap">
+      <canvas id="coverCanvas" width="1080" height="1080" aria-label="Live cover preview. Drag a photo to move it, scroll to zoom."></canvas>
+      <p class="stage-hint" id="stageHint">Drag a photo to reposition it &middot; scroll over it to zoom &middot; click a panel to select it</p>
+    </div>
+    <div class="panel-strip" id="panelStrip" aria-label="Panels"></div>
   </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover preview"></canvas>
+
+  <aside class="rail" aria-label="Cover controls">
+    <section class="card">
+      <h2>1 &middot; Layout</h2>
+      <p class="card-note">How your photos sit on the poster.</p>
+      <div class="choice-grid" id="layoutChoices"></div>
+    </section>
+
+    <section class="card">
+      <h2>2 &middot; Sunset grade</h2>
+      <p class="card-note">The Vice City light your cover is shot in.</p>
+      <div class="choice-grid swatches" id="gradeChoices"></div>
+    </section>
+
+    <section class="card">
+      <h2>3 &middot; Caption</h2>
+      <label class="field">
+        <span>Headline</span>
+        <input id="titleInput" type="text" maxlength="28" value="VICE COAST" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Tagline</span>
+        <input id="subtitleInput" type="text" maxlength="48" value="chasing the last light" autocomplete="off">
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>4 &middot; Selected panel</h2>
+      <p class="card-note" id="panelNote">Panel 1 of 4</p>
+      <div class="panel-tools">
+        <button id="uploadBtn" class="btn" type="button">Upload a photo</button>
+        <input id="fileInput" type="file" accept="image/*" hidden>
+        <button id="fillBtn" class="btn" type="button">Fit whole photo</button>
+        <button id="centerBtn" class="btn" type="button">Centre it</button>
+      </div>
+      <label class="field">
+        <span>Zoom <output id="zoomOut">100%</output></span>
+        <input id="zoomSlider" type="range" min="50" max="400" value="100" step="5">
+      </label>
+      <div class="sample-row">
+        <span>Or try a sample:</span>
+        <button class="btn btn-small" type="button" data-sample="boulevard">Boulevard</button>
+        <button class="btn btn-small" type="button" data-sample="pier">Pier</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5 &middot; Export size</h2>
+      <p class="card-note">Common post sizes. The PNG is rendered fresh at full size.</p>
+      <div class="choice-grid" id="sizeChoices"></div>
+      <button id="exportBtn" class="btn btn-primary btn-wide" type="button">Download cover PNG</button>
+      <p class="fineprint">Everything runs on your machine. Photos are never uploaded. No Rockstar artwork, logos, or fonts are used; the lettering is Anton and Pacifico under the SIL Open Font License.</p>
+    </section>
+  </aside>
 </main>
-<script type="module" src="./src/main.js"></script>
+
+<footer class="foot">
+  <p>Vice Coast Cover Studio &middot; an original poster maker, not affiliated with Rockstar Games.</p>
+</footer>
+
+<script type="module" src="./src/controls.js"></script>
 </body>
 </html>

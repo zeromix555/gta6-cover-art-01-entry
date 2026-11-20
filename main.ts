@@ -1,95 +1,145 @@
 // Vice Coast Cover Studio — entrypoint (Node 22, standard library only).
-// Hands in the app authored in this session: it copies app/ and screenshots/
-// from beside this file into /output and writes /output/dossier.json with the
-// vendored make.fun library. Before writing anything it checks the entry the
-// way the scorer's gate will — app/index.html present and inside its 1 MiB
-// cap, 3 or 4 screenshots each at most 256 KiB, app/ at most 993 files and
-// 48 MiB, dossier at most 1.5 MiB. A failed check prints the fix and exits 1,
-// so a broken entry never reaches the dossier.
 //
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
+// What this program does: it hands the app in. It checks the entry
+// against the competition's own size caps first (a bad entry fails here,
+// loudly, instead of failing in the grader), then copies app/ and
+// screenshots/ beside this file into the output directory and writes
+// /output/dossier.json with the vendored make.fun library.
+//
+// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for
+// /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+//
+// The program runs twice and both runs must write the same bytes: every
+// step below is deterministic (plain file copies, no timestamps in the
+// dossier), so a second run reproduces the first byte for byte.
 
-import { cpSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { buildDossier } from './vendor/makefun-app.ts';
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { buildDossier } from "./vendor/makefun-app.ts";
 
-const here = fileURLToPath(new URL('.', import.meta.url));
-const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+// --- the competition's caps, in one place ---
+const CAPS = {
+  indexMaxBytes: 1_048_576, // app/index.html at most 1 MiB
+  shotsMax: 4, // screenshots/ holds 3 or 4 images
+  shotMaxBytes: 262_144, // each screenshot at most 256 KiB
+  appMaxFiles: 993, // app/ at most 993 files and directories
+  appMaxBytes: 50_331_648, // app/ at most 48 MiB in all
+  appPathMaxBytes: 1000, // every path under app/ at most 1000 bytes
+  dossierMaxBytes: 1_572_864, // dossier.json at most 1.5 MiB
+  textMaxBytes: 163_840, // dossier text cap the library applies
+};
 
-const SHOT_MAX_BYTES = 262144;
-const APP_MAX_FILES = 993;
-const APP_MAX_BYTES = 50331648;
-const DOSSIER_MAX_BYTES = 1572864;
-const INDEX_MAX_BYTES = 1048576;
+const root = fileURLToPath(new URL(".", import.meta.url));
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
 
-function fail(message) {
-  console.error(`entry check failed: ${message}`);
-  process.exit(1);
+// Fail fast with a plain message; a non-zero exit is the signal.
+function refuse(message) {
+  throw new Error(`gta6-cover-art-01 entry refused: ${message}`);
 }
 
-function countTree(dir) {
+function bytesOf(path) {
+  return statSync(path).size;
+}
+
+// Walk a directory tree, counting entries and bytes, and refusing any
+// path that is too long. Returns { files, bytes }.
+function measureTree(dir) {
   let files = 0;
   let bytes = 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      const sub = countTree(path);
-      files += sub.files;
-      bytes += sub.bytes;
-    } else if (entry.isFile()) {
+  const stack = [dir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const name of readdirSync(current)) {
+      const path = join(current, name);
+      // app/ is plain files and directories only: refuse symlinks here
+      // instead of letting the grader trip over them.
+      if (lstatSync(path).isSymbolicLink()) {
+        refuse(`symlink under app/: ${path}`);
+      }
+      const stat = statSync(path);
       files += 1;
-      bytes += statSync(path).size;
+      if (Buffer.byteLength(path, "utf8") > CAPS.appPathMaxBytes) {
+        refuse(`path too long under app/: ${path}`);
+      }
+      if (stat.isDirectory()) stack.push(path);
+      else bytes += stat.size;
     }
   }
   return { files, bytes };
 }
 
-// Gate 1: the app must exist and open on its index, inside its 1 MiB cap.
-// The cap is on the raw file, before any build step — the app ships as-is.
-const indexPath = join(here, 'app', 'index.html');
-if (!existsSync(indexPath)) fail('app/index.html is missing');
-if (statSync(indexPath).size > INDEX_MAX_BYTES) fail('app/index.html is over the 1 MiB cap');
-
-// Gate 2: 3 or 4 screenshots, each at most 256 KiB.
-const shotsDir = join(here, 'screenshots');
-if (!existsSync(shotsDir)) fail('screenshots/ is missing');
-const shots = readdirSync(shotsDir).filter((f) => /\.(png|jpe?g)$/i.test(f)).sort();
-if (shots.length < 3 || shots.length > 4) fail(`expected 3-4 screenshots, found ${shots.length}`);
-for (const shot of shots) {
-  const size = statSync(join(shotsDir, shot)).size;
-  if (size > SHOT_MAX_BYTES) fail(`${shot} is ${size} bytes, over the 256 KiB cap`);
+// Gate 1 — the editor page exists and fits the cap.
+function checkIndex() {
+  const indexPath = join(root, "app", "index.html");
+  if (!existsSync(indexPath)) refuse("app/index.html is missing");
+  const size = bytesOf(indexPath);
+  if (size > CAPS.indexMaxBytes) {
+    refuse(`app/index.html is ${size} bytes, over the ${CAPS.indexMaxBytes} cap`);
+  }
 }
 
-// Gate 3: app/ inside the hosting caps (files and bytes together).
-const appTree = countTree(join(here, 'app'));
-if (appTree.files > APP_MAX_FILES) fail(`app/ has ${appTree.files} files, over the 993 cap`);
-if (appTree.bytes > APP_MAX_BYTES) fail(`app/ is ${appTree.bytes} bytes, over the 48 MiB cap`);
+// Gate 2 — screenshots: 3 or 4 files, each a whole image under the cap.
+function checkShots() {
+  const shotsDir = join(root, "screenshots");
+  if (!existsSync(shotsDir)) refuse("screenshots/ is missing");
+  const names = readdirSync(shotsDir).filter((n) => !n.startsWith(".")).sort();
+  if (names.length < 3 || names.length > CAPS.shotsMax) {
+    refuse(`screenshots/ holds ${names.length} images, need 3 or 4`);
+  }
+  for (const name of names) {
+    if (!/\.(png|jpe?g)$/i.test(name)) {
+      refuse(`screenshots/${name} is not a PNG or JPEG image`);
+    }
+    const size = bytesOf(join(shotsDir, name));
+    if (size > CAPS.shotMaxBytes) {
+      refuse(`screenshots/${name} is ${size} bytes, over the ${CAPS.shotMaxBytes} cap`);
+    }
+  }
+}
 
-mkdirSync(out, { recursive: true });
-cpSync(join(here, 'app'), join(out, 'app'), { recursive: true });
-mkdirSync(join(out, 'screenshots'), { recursive: true });
-cpSync(shotsDir, join(out, 'screenshots'), { recursive: true });
+// Gate 3 — app/ fits the file-count and byte caps.
+function checkAppTree() {
+  const appDir = join(root, "app");
+  if (!existsSync(appDir)) refuse("app/ is missing");
+  const { files, bytes } = measureTree(appDir);
+  if (files > CAPS.appMaxFiles) {
+    refuse(`app/ holds ${files} entries, over the ${CAPS.appMaxFiles} cap`);
+  }
+  if (bytes > CAPS.appMaxBytes) {
+    refuse(`app/ is ${bytes} bytes, over the ${CAPS.appMaxBytes} cap`);
+  }
+}
 
-// The scorer's own caps (reference/gate.json): only text_max_bytes shapes the
-// bytes; the rest refuse an entry the scorer would refuse (more than 4
-// screenshots or one over 256 KiB; more than 993 files in app/ or 48 MiB of
-// app files in all, or a path under app/ over 1000 bytes: app/ counts beside
-// /output's own 1000-entry cap, its screenshots/ and dossier.json).
-writeFileSync(
-  join(out, 'dossier.json'),
-  buildDossier(out, {
-    text_max_bytes: 163840,
-    screenshots: { max: 4, max_bytes: 262144 },
-    app_max_files: 993,
-    app_max_bytes: 50331648,
-    app_path_max_bytes: 1000,
-  }),
-);
-const dossierPath = join(out, 'dossier.json');
-const dossierBytes = statSync(dossierPath).size;
-// Gate 4: the dossier itself must stay inside the 1.5 MiB cap, checked after
-// the write so the number reported is the file the scorer will read.
-if (dossierBytes > DOSSIER_MAX_BYTES) fail(`dossier is ${dossierBytes} bytes, over the 1.5 MiB cap`);
-console.log(`handed in ${shots.length} screenshots, app/ ${appTree.files} files / ${appTree.bytes} bytes, dossier ${dossierBytes} bytes (cap ${DOSSIER_MAX_BYTES})`);
+// Gate 4 — the dossier the library writes must fit its own cap.
+function checkDossierSize(dossierText) {
+  const size = Buffer.byteLength(dossierText, "utf8");
+  if (size > CAPS.dossierMaxBytes) {
+    refuse(`dossier.json would be ${size} bytes, over the ${CAPS.dossierMaxBytes} cap`);
+  }
+  return size;
+}
+
+checkIndex();
+checkShots();
+checkAppTree();
+
+mkdirSync(outDir, { recursive: true });
+cpSync(join(root, "app"), join(outDir, "app"), { recursive: true });
+mkdirSync(join(outDir, "screenshots"), { recursive: true });
+if (existsSync(join(root, "screenshots"))) {
+  cpSync(join(root, "screenshots"), join(outDir, "screenshots"), { recursive: true });
+}
+
+const dossier = buildDossier(resolve(outDir), {
+  text_max_bytes: CAPS.textMaxBytes,
+  screenshots: { max: CAPS.shotsMax, max_bytes: CAPS.shotMaxBytes },
+  app_max_files: CAPS.appMaxFiles,
+  app_max_bytes: CAPS.appMaxBytes,
+  app_path_max_bytes: CAPS.appPathMaxBytes,
+});
+
+const dossierBytes = checkDossierSize(dossier);
+writeFileSync(join(outDir, "dossier.json"), dossier);
+console.log(`Vice Coast Cover Studio handed in: dossier ${dossierBytes} bytes (cap ${CAPS.dossierMaxBytes})`);
