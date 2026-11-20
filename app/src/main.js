@@ -1,15 +1,18 @@
-// Vice Coast Cover Studio — wires the page: layout/grade/size pickers, per-panel photos
-// (upload or sample), drag-to-pan crop, zoom, caption editing and PNG export at the
-// three post sizes. A `?shot=` query sets up a fixed scene for a screenshot instead.
+// Vice Coast Cover Studio — page wiring: layout / grade / size pickers, per-panel
+// photos (upload or bundled sample), drag-to-pan cropping, zoom, caption editing,
+// and PNG export at the three post sizes. A `?shot=` query instead sets up one
+// fixed scene so a screenshot can capture it.
 import { drawCover, layoutRects, panelCount } from './cover.js';
 
 const canvas = document.getElementById('cover');
 const titleInput = document.getElementById('title');
 const subtitleInput = document.getElementById('subtitle');
-const status = document.getElementById('status');
+const statusEl = document.getElementById('status');
 const zoomInput = document.getElementById('zoom');
 const zoomVal = document.getElementById('zoomVal');
 const panelName = document.getElementById('panelName');
+
+const blankPanel = () => ({ img: null, zoom: 1.15, ox: 0, oy: 0 });
 
 const state = {
   layout: 'hero3',
@@ -18,12 +21,7 @@ const state = {
   title: titleInput.value,
   subtitle: subtitleInput.value,
   selected: 0,
-  panels: [
-    { img: null, zoom: 1.15, ox: 0, oy: 0 },
-    { img: null, zoom: 1.15, ox: 0, oy: 0 },
-    { img: null, zoom: 1.15, ox: 0, oy: 0 },
-    { img: null, zoom: 1.15, ox: 0, oy: 0 },
-  ],
+  panels: [blankPanel(), blankPanel(), blankPanel(), blankPanel()],
 };
 
 function loadImage(url) {
@@ -39,7 +37,7 @@ function redraw() {
   drawCover(canvas, state);
 }
 
-function syncSize() {
+function applySize() {
   const [w, h] = state.size.split('x').map(Number);
   canvas.width = w;
   canvas.height = h;
@@ -57,37 +55,38 @@ function selectPanel(i) {
   redraw();
 }
 
-async function setPanelPhoto(i, img) {
+function setPanelPhoto(i, img) {
   state.panels[i].img = img;
   state.panels[i].ox = 0;
   state.panels[i].oy = 0;
   selectPanel(i);
 }
 
-// --- controls ---------------------------------------------------------------
-document.getElementById('layouts').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-layout]');
-  if (!b) return;
-  state.layout = b.dataset.layout;
-  document.querySelectorAll('#layouts button').forEach((x) => x.classList.toggle('on', x === b));
+// --- pickers ---------------------------------------------------------------
+function wireSeg(id, attr, onPick) {
+  document.getElementById(id).addEventListener('click', (e) => {
+    const b = e.target.closest(`button[data-${attr}]`);
+    if (!b) return;
+    onPick(b.dataset[attr]);
+    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x === b));
+  });
+}
+
+wireSeg('layouts', 'layout', (v) => {
+  state.layout = v;
   if (state.selected >= panelCount(state.layout)) selectPanel(0);
   redraw();
 });
-document.getElementById('grades').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-grade]');
-  if (!b) return;
-  state.grade = b.dataset.grade;
-  document.querySelectorAll('#grades button').forEach((x) => x.classList.toggle('on', x === b));
+wireSeg('grades', 'grade', (v) => {
+  state.grade = v;
   redraw();
 });
-document.getElementById('sizes').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-size]');
-  if (!b) return;
-  state.size = b.dataset.size;
-  document.querySelectorAll('#sizes button').forEach((x) => x.classList.toggle('on', x === b));
-  syncSize();
+wireSeg('sizes', 'size', (v) => {
+  state.size = v;
+  applySize();
   redraw();
 });
+
 titleInput.addEventListener('input', () => { state.title = titleInput.value; redraw(); });
 subtitleInput.addEventListener('input', () => { state.subtitle = subtitleInput.value; redraw(); });
 document.getElementById('panelPick').addEventListener('click', (e) => {
@@ -98,13 +97,13 @@ document.getElementById('photo').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   setPanelPhoto(state.selected, await loadImage(URL.createObjectURL(file)));
-  status.textContent = `Photo loaded into panel ${state.selected + 1}.`;
+  statusEl.textContent = `Photo loaded into panel ${state.selected + 1}.`;
 });
 document.querySelector('.samples').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-sample]');
   if (!b) return;
   setPanelPhoto(state.selected, await loadImage(`samples/${b.dataset.sample}.jpg`));
-  status.textContent = `Sample "${b.dataset.sample}" loaded into panel ${state.selected + 1}.`;
+  statusEl.textContent = `Sample "${b.dataset.sample}" loaded into panel ${state.selected + 1}.`;
 });
 zoomInput.addEventListener('input', () => {
   state.panels[state.selected].zoom = Number(zoomInput.value);
@@ -156,7 +155,7 @@ document.getElementById('export').addEventListener('click', () => {
     a.href = URL.createObjectURL(blob);
     a.download = `vice-coast-cover-${w}x${h}.png`;
     a.click();
-    status.textContent = `Saved vice-coast-cover-${w}x${h}.png`;
+    statusEl.textContent = `Saved vice-coast-cover-${w}x${h}.png`;
   }, 'image/png');
 });
 
@@ -167,12 +166,12 @@ async function runShot(shot, query) {
   if (params.get('grade')) state.grade = params.get('grade');
   if (params.get('title') !== null) { state.title = params.get('title'); titleInput.value = state.title; }
   if (params.get('subtitle') !== null) { state.subtitle = params.get('subtitle'); subtitleInput.value = state.subtitle; }
-  if (params.get('size')) { state.size = params.get('size'); syncSize(); }
+  if (params.get('size')) { state.size = params.get('size'); applySize(); }
   // Keep the picker buttons honest about the scene being shot.
   document.querySelectorAll('#layouts button').forEach((x) => x.classList.toggle('on', x.dataset.layout === state.layout));
   document.querySelectorAll('#grades button').forEach((x) => x.classList.toggle('on', x.dataset.grade === state.grade));
   document.querySelectorAll('#sizes button').forEach((x) => x.classList.toggle('on', x.dataset.size === state.size));
-  const photos = (params.get('photo') ?? 'pier,boulevard,pier,boulevard').split(',');
+  const photos = (params.get('photo') || 'pier,boulevard,pier,boulevard').split(',');
   for (let i = 0; i < panelCount(state.layout); i++) {
     state.panels[i].img = await loadImage(`samples/${photos[i % photos.length]}.jpg`);
   }

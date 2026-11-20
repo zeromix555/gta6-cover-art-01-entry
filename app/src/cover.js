@@ -1,56 +1,62 @@
-// Vice Coast Cover Studio — the cover engine: four multi-panel layouts, five Vice City
-// grades, Anton title lettering with a Pacifico neon subtitle. All original art and
-// lettering; no Rockstar logo, artwork or fonts anywhere in this file.
+// Vice Coast Cover Studio — cover renderer.
+// Four poster layouts, five Vice City colour grades, Anton title lettering with a
+// Pacifico neon subtitle. Every letterform and frame here is original work; there
+// is no Rockstar logo, artwork, or font anywhere in this file.
 
 export const LAYOUTS = ['hero3', 'grid', 'bleed', 'strip'];
 
 export const GRADES = {
-  sunset: { wash: 'rgba(255, 94, 60, 0.16)', top: 'rgba(255, 120, 80, 0.00)', bottom: 'rgba(200, 40, 120, 0.55)', accent: '#ffb347', filter: null },
+  sunset: { wash: 'rgba(255, 94, 60, 0.16)', top: 'rgba(255, 120, 80, 0)', bottom: 'rgba(200, 40, 120, 0.55)', accent: '#ffb347', filter: null },
   neon: { wash: 'rgba(255, 45, 149, 0.14)', top: 'rgba(45, 226, 255, 0.10)', bottom: 'rgba(255, 45, 149, 0.50)', accent: '#2de2ff', filter: null },
   teal: { wash: 'rgba(45, 226, 255, 0.14)', top: 'rgba(45, 226, 255, 0.12)', bottom: 'rgba(10, 90, 120, 0.55)', accent: '#7df9ff', filter: null },
   gold: { wash: 'rgba(255, 179, 71, 0.18)', top: 'rgba(255, 200, 100, 0.10)', bottom: 'rgba(180, 90, 20, 0.50)', accent: '#ffd166', filter: null },
   noir: { wash: 'rgba(0, 0, 0, 0.10)', top: 'rgba(255, 255, 255, 0.05)', bottom: 'rgba(0, 0, 0, 0.55)', accent: '#ffffff', filter: 'grayscale(1) contrast(1.18) brightness(1.05)' },
 };
 
-/** Panel rectangles (and tilt, for the strip) for a layout at W x H. Index = panel number. */
+// Panel boxes for one layout at a W x H canvas. Index matches the panel number.
 export function layoutRects(layout, w, h) {
-  const g = Math.max(4, Math.round(w * 0.005)); // gutter
+  const gap = Math.max(4, Math.round(w * 0.005));
   if (layout === 'grid') {
-    const cw = (w - g) / 2, ch = (h - g) / 2;
+    const cw = (w - gap) / 2;
+    const ch = (h - gap) / 2;
     return [
       { x: 0, y: 0, w: cw, h: ch, rot: 0 },
-      { x: cw + g, y: 0, w: cw, h: ch, rot: 0 },
-      { x: 0, y: ch + g, w: cw, h: ch, rot: 0 },
-      { x: cw + g, y: ch + g, w: cw, h: ch, rot: 0 },
+      { x: cw + gap, y: 0, w: cw, h: ch, rot: 0 },
+      { x: 0, y: ch + gap, w: cw, h: ch, rot: 0 },
+      { x: cw + gap, y: ch + gap, w: cw, h: ch, rot: 0 },
     ];
   }
-  if (layout === 'bleed') {
-    return [{ x: 0, y: 0, w, h, rot: 0 }];
-  }
+  if (layout === 'bleed') return [{ x: 0, y: 0, w, h, rot: 0 }];
   if (layout === 'strip') {
-    const pw = w * 0.30, ph = h * 0.52, y = h * 0.06;
+    const pw = w * 0.30;
+    const ph = h * 0.52;
+    const y0 = h * 0.06;
     return [
-      { x: w * 0.04, y, w: pw, h: ph, rot: -0.07 },
-      { x: w * 0.35, y: y + h * 0.02, w: pw, h: ph, rot: 0.03 },
-      { x: w * 0.66, y, w: pw, h: ph, rot: -0.02 },
+      { x: w * 0.04, y: y0, w: pw, h: ph, rot: -0.07 },
+      { x: w * 0.35, y: y0 + h * 0.02, w: pw, h: ph, rot: 0.03 },
+      { x: w * 0.66, y: y0, w: pw, h: ph, rot: -0.02 },
     ];
   }
-  // hero3 (default): one hero panel over three small ones.
-  const heroH = h * 0.60, cw = (w - g * 2) / 3;
+  // hero3: one wide hero panel, three small ones underneath.
+  const heroH = h * 0.60;
+  const cw = (w - gap * 2) / 3;
+  const smallH = h - heroH - gap;
   return [
     { x: 0, y: 0, w, h: heroH, rot: 0 },
-    { x: 0, y: heroH + g, w: cw, h: h - heroH - g, rot: 0 },
-    { x: cw + g, y: heroH + g, w: cw, h: h - heroH - g, rot: 0 },
-    { x: (cw + g) * 2, y: heroH + g, w: cw, h: h - heroH - g, rot: 0 },
+    { x: 0, y: heroH + gap, w: cw, h: smallH, rot: 0 },
+    { x: cw + gap, y: heroH + gap, w: cw, h: smallH, rot: 0 },
+    { x: (cw + gap) * 2, y: heroH + gap, w: cw, h: smallH, rot: 0 },
   ];
 }
 
-/** How many panels a layout shows. */
 export function panelCount(layout) {
-  return layout === 'bleed' ? 1 : layout === 'strip' ? 3 : 4;
+  if (layout === 'bleed') return 1;
+  if (layout === 'strip') return 3;
+  return 4;
 }
 
-function drawPhoto(ctx, img, rect, zoom, ox, oy, filter) {
+// Paint one photo (or a purple placeholder when the panel is empty) clipped to rect.
+function paintPhoto(ctx, img, rect, zoom, ox, oy, filter) {
   ctx.save();
   ctx.beginPath();
   ctx.rect(rect.x, rect.y, rect.w, rect.h);
@@ -67,56 +73,59 @@ function drawPhoto(ctx, img, rect, zoom, ox, oy, filter) {
   const scale = Math.max(rect.w / img.naturalWidth, rect.h / img.naturalHeight) * zoom;
   const dw = img.naturalWidth * scale;
   const dh = img.naturalHeight * scale;
-  const dx = rect.x + (rect.w - dw) / 2 + ox * Math.max(0, (dw - rect.w) / 2);
-  const dy = rect.y + (rect.h - dh) / 2 + oy * Math.max(0, (dh - rect.h) / 2);
+  const slackX = Math.max(0, (dw - rect.w) / 2);
+  const slackY = Math.max(0, (dh - rect.h) / 2);
+  const dx = rect.x + (rect.w - dw) / 2 + ox * slackX;
+  const dy = rect.y + (rect.h - dh) / 2 + oy * slackY;
   if (filter) ctx.filter = filter;
   ctx.drawImage(img, dx, dy, dw, dh);
   ctx.filter = 'none';
   ctx.restore();
 }
 
-function drawPanel(ctx, img, rect, panel, filter) {
-  if (rect.rot) {
-    const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(rect.rot);
-    // Polaroid-style white border around the tilted snapshot.
-    ctx.fillStyle = '#fdf7f0';
-    ctx.fillRect(-rect.w / 2 - 10, -rect.h / 2 - 10, rect.w + 20, rect.h + 20);
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 8;
-    ctx.fillRect(-rect.w / 2 - 10, -rect.h / 2 - 10, rect.w + 20, rect.h + 20);
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    drawPhoto(ctx, img, { x: -rect.w / 2, y: -rect.h / 2, w: rect.w, h: rect.h }, panel.zoom, panel.ox, panel.oy, filter);
-    ctx.restore();
+// One panel; tilted strip panels get a polaroid-style white border and shadow.
+function paintPanel(ctx, img, rect, panel, filter) {
+  if (!rect.rot) {
+    paintPhoto(ctx, img, rect, panel.zoom, panel.ox, panel.oy, filter);
     return;
   }
-  drawPhoto(ctx, img, rect, panel.zoom, panel.ox, panel.oy, filter);
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rect.rot);
+  const pad = 10;
+  ctx.fillStyle = '#fdf7f0';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 8;
+  ctx.fillRect(-rect.w / 2 - pad, -rect.h / 2 - pad, rect.w + pad * 2, rect.h + pad * 2);
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  paintPhoto(ctx, img, { x: -rect.w / 2, y: -rect.h / 2, w: rect.w, h: rect.h }, panel.zoom, panel.ox, panel.oy, filter);
+  ctx.restore();
 }
 
-function fitFont(ctx, text, fontFamily, maxWidth, startSize, weight = '') {
+// Shrink a font until the text fits maxWidth. Returns the size actually used.
+function fitFont(ctx, text, family, maxWidth, startSize) {
   let size = startSize;
-  ctx.font = `${weight} ${size}px ${fontFamily}`;
+  ctx.font = `${size}px ${family}`;
   while (ctx.measureText(text).width > maxWidth && size > 10) {
     size -= 2;
-    ctx.font = `${weight} ${size}px ${fontFamily}`;
+    ctx.font = `${size}px ${family}`;
   }
   return size;
 }
 
-/**
- * Draws the whole cover onto `canvas` (at its own pixel size).
- * state: { layout, grade, panels: [{ img, zoom, ox, oy }], title, subtitle }
- */
+// Draw the full cover onto `canvas` at its own pixel size.
+// state: { layout, grade, panels: [{ img, zoom, ox, oy }], title, subtitle }
 export function drawCover(canvas, state) {
   const ctx = canvas.getContext('2d');
-  const { width: w, height: h } = canvas;
-  const grade = GRADES[state.grade] ?? GRADES.sunset;
+  const w = canvas.width;
+  const h = canvas.height;
+  const grade = GRADES[state.grade] || GRADES.sunset;
 
-  // Backdrop: deep Vice City dusk.
+  // Dusk backdrop behind the panels.
   const bg = ctx.createLinearGradient(0, 0, 0, h);
   bg.addColorStop(0, '#2b1038');
   bg.addColorStop(0.55, '#57204e');
@@ -126,11 +135,11 @@ export function drawCover(canvas, state) {
 
   const rects = layoutRects(state.layout, w, h);
   rects.forEach((rect, i) => {
-    const panel = state.panels[i] ?? { img: null, zoom: 1.4, ox: 0, oy: 0 };
-    drawPanel(ctx, panel.img, rect, panel, grade.filter);
+    const panel = state.panels[i] || { img: null, zoom: 1.4, ox: 0, oy: 0 };
+    paintPanel(ctx, panel.img, rect, panel, grade.filter);
   });
 
-  // Grade wash + vertical tint, strongest at the foot where the title sits.
+  // Grade wash, then a vertical tint that deepens toward the title band.
   ctx.fillStyle = grade.wash;
   ctx.fillRect(0, 0, w, h);
   const tint = ctx.createLinearGradient(0, h * 0.3, 0, h);
@@ -139,12 +148,12 @@ export function drawCover(canvas, state) {
   ctx.fillStyle = tint;
   ctx.fillRect(0, 0, w, h);
 
-  // Poster frame.
+  // Thin white poster frame.
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
   ctx.lineWidth = Math.max(3, w * 0.006);
   ctx.strokeRect(w * 0.014, h * 0.014, w * 0.972, h * 0.972);
 
-  // Title block: dark band, Anton title, Pacifico neon subtitle.
+  // Title band fading up from the bottom edge.
   const bandH = h * 0.20;
   const band = ctx.createLinearGradient(0, h - bandH, 0, h);
   band.addColorStop(0, 'rgba(12, 4, 22, 0)');
@@ -178,9 +187,9 @@ export function drawCover(canvas, state) {
     ctx.shadowBlur = 0;
   }
 
-  // Corner tag: invented studio mark, top-left.
+  // Invented studio mark, top-left corner.
   const tag = 'VICE COAST';
-  const tagSize = fitFont(ctx, tag, 'Anton, sans-serif', w * 0.2, h * 0.022);
+  fitFont(ctx, tag, 'Anton, sans-serif', w * 0.2, h * 0.022);
   ctx.textAlign = 'left';
   ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
   ctx.fillText(tag, w * 0.035, h * 0.045);

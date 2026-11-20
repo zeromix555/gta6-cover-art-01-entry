@@ -9,9 +9,9 @@ An offline, in-browser cover maker for the **gta6-cover-art-01** bounty: turn yo
 ## What it does
 
 - **Four layouts** — Hero + 3, 2×2 grid, full bleed, and a tilted snapshot strip.
-- **Per-panel photos** — upload your own photo into any panel, or use the two bundled samples. Drag the photo on the canvas to reposition it; zoom per panel.
+- **Per-panel photos** — upload your own photo into any panel, or use the two bundled samples. Drag the photo on the canvas to reposition it; zoom each panel on its own.
 - **Five Vice City grades** — Sunset, Neon nights, Vice teal, Golden hour, Mono noir.
-- **Caption editing** — a bold Anton title with a Pacifico neon subtitle, sized to fit.
+- **Caption editing** — a bold Anton title with a Pacifico neon subtitle, shrunk to fit.
 - **One-step export** — PNG in 1080×1080, 1080×1350, or 1920×1080.
 
 Everything runs offline in the browser: no network requests, no uploads, your photos never leave your machine. The lettering uses Anton and Pacifico, vendored under `app/fonts/` under the SIL Open Font License. All art and lettering is original — no Rockstar Games logo, artwork, or fonts.
@@ -27,8 +27,8 @@ Open the page, pick a layout and a grade, drop your photos into the panels, type
 ## How it is built
 
 - `app/` — the static web app (`index.html`, `style.css`, `src/cover.js` render engine, `src/main.js` wiring, `samples/`, `fonts/`).
-- `main.ts` — the entrypoint (Node 22, standard library only): validates the entry against the scorer's caps, copies `app/` and `screenshots/` to `/output`, and writes `/output/dossier.json` with the vendored make.fun library.
-- `screenshots/` — 3–4 screenshots: the app in the browser with a photo loaded, and covers the app itself exported.
+- `main.ts` — the entrypoint (Node 22, standard library only): checks the entry against the scorer's caps, copies `app/` and `screenshots/` to `/output`, and writes `/output/dossier.json` with the vendored make.fun library.
+- `screenshots/` — four screenshots: the app in the browser with a photo loaded, and covers the app itself drew.
 
 ## License
 

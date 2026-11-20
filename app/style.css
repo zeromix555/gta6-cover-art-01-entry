@@ -13,10 +13,10 @@
   font-display: swap;
 }
 
-html, body { margin: 0; min-height: 100%; background: #14091f; color: #f5eefb; font: 15px/1.45 system-ui, sans-serif; }
+html, body { margin: 0; min-height: 100%; background: #150a20; color: #f6eefc; font: 15px/1.45 system-ui, -apple-system, sans-serif; }
 .app { display: flex; gap: 28px; align-items: flex-start; justify-content: center; padding: 24px; box-sizing: border-box; }
-.controls { display: flex; flex-direction: column; gap: 14px; width: 300px; flex: none; }
-.controls h1 {
+.panel { display: flex; flex-direction: column; gap: 14px; width: 300px; flex: none; }
+.panel h1 {
   margin: 0; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 34px; line-height: 1.05;
   letter-spacing: 1px; text-transform: uppercase;
   background: linear-gradient(90deg, #ff5e8a, #ffb347 55%, #2de2ff);
@@ -28,16 +28,16 @@ legend { font-weight: 700; color: #ffb347; padding: 0 6px; }
 .seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .seg button, .samples button {
   font: inherit; padding: 7px 10px; border: 1px solid #6b3f8a; border-radius: 8px;
-  background: #241233; color: #f5eefb; cursor: pointer;
+  background: #241233; color: #f6eefc; cursor: pointer;
 }
 .seg button.on, .panel-pick button.on { background: #ff5e8a; border-color: #ff5e8a; color: #fff; font-weight: 700; }
 .panel-pick { display: flex; gap: 6px; margin-bottom: 8px; }
 .panel-pick button {
   font: inherit; font-weight: 700; width: 38px; height: 38px; border-radius: 50%;
-  border: 1px solid #6b3f8a; background: #241233; color: #f5eefb; cursor: pointer;
+  border: 1px solid #6b3f8a; background: #241233; color: #f6eefc; cursor: pointer;
 }
 label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
-input[type=text] { font: inherit; padding: 9px; border: 1px solid #6b3f8a; border-radius: 8px; background: #241233; color: #f5eefb; }
+input[type=text] { font: inherit; padding: 9px; border: 1px solid #6b3f8a; border-radius: 8px; background: #241233; color: #f6eefc; }
 input[type=range] { width: 100%; accent-color: #ff5e8a; }
 .file { cursor: pointer; }
 .file input { font: inherit; color: #c9a8d8; }
@@ -51,14 +51,14 @@ button.export {
 }
 #status { margin: 0; color: #2de2ff; min-height: 1.2em; }
 canvas {
-  width: min(72vh, 62vw); height: auto; aspect-ratio: attr(width) / attr(height);
+  width: min(72vh, 62vw); height: auto;
   box-shadow: 0 10px 44px rgba(0, 0, 0, 0.55); border-radius: 4px; background: #2b1838;
 }
-body.shot-cover .controls { display: none; }
+body.shot-cover .panel { display: none; }
 body.shot-cover .app { padding: 0; }
 body.shot-cover canvas { width: 100vw; height: 100vh; box-shadow: none; border-radius: 0; }
 @media (max-width: 900px) {
   .app { flex-direction: column; align-items: center; }
-  .controls { width: min(100%, 420px); }
+  .panel { width: min(100%, 420px); }
   canvas { width: min(100%, 560px); }
 }
