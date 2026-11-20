@@ -1,7 +1,7 @@
-// Vice Coast Cover Studio — cover renderer.
-// Four poster layouts, five Vice City colour grades, Anton title lettering with a
-// Pacifico neon subtitle. Every letterform and frame here is original work; there
-// is no Rockstar logo, artwork, or font anywhere in this file.
+// Vice Coast Cover Studio — the cover renderer.
+// Four poster layouts, five Vice City colour grades, an Anton title with a
+// Pacifico neon subtitle. All lettering, frames and gradients here are
+// original work; no Rockstar logo, artwork or font appears anywhere.
 
 export const LAYOUTS = ['hero3', 'grid', 'bleed', 'strip'];
 
@@ -13,7 +13,7 @@ export const GRADES = {
   noir: { wash: 'rgba(0, 0, 0, 0.10)', top: 'rgba(255, 255, 255, 0.05)', bottom: 'rgba(0, 0, 0, 0.55)', accent: '#ffffff', filter: 'grayscale(1) contrast(1.18) brightness(1.05)' },
 };
 
-// Panel boxes for one layout at a W x H canvas. Index matches the panel number.
+// Panel boxes for one layout on a W x H canvas. Index = panel number.
 export function layoutRects(layout, w, h) {
   const gap = Math.max(4, Math.round(w * 0.005));
   if (layout === 'grid') {
@@ -37,7 +37,7 @@ export function layoutRects(layout, w, h) {
       { x: w * 0.66, y: y0, w: pw, h: ph, rot: -0.02 },
     ];
   }
-  // hero3: one wide hero panel, three small ones underneath.
+  // hero3: one wide hero panel, three small ones underneath it.
   const heroH = h * 0.60;
   const cw = (w - gap * 2) / 3;
   const smallH = h - heroH - gap;
@@ -55,7 +55,7 @@ export function panelCount(layout) {
   return 4;
 }
 
-// Paint one photo (or a purple placeholder when the panel is empty) clipped to rect.
+// Paint one photo clipped to rect; an empty panel gets a purple placeholder.
 function paintPhoto(ctx, img, rect, zoom, ox, oy, filter) {
   ctx.save();
   ctx.beginPath();
@@ -83,7 +83,7 @@ function paintPhoto(ctx, img, rect, zoom, ox, oy, filter) {
   ctx.restore();
 }
 
-// One panel; tilted strip panels get a polaroid-style white border and shadow.
+// One panel; tilted strip panels get a polaroid-style white border + shadow.
 function paintPanel(ctx, img, rect, panel, filter) {
   if (!rect.rot) {
     paintPhoto(ctx, img, rect, panel.zoom, panel.ox, panel.oy, filter);
@@ -106,7 +106,7 @@ function paintPanel(ctx, img, rect, panel, filter) {
   ctx.restore();
 }
 
-// Shrink a font until the text fits maxWidth. Returns the size actually used.
+// Shrink a font until the text fits maxWidth; return the size actually used.
 function fitFont(ctx, text, family, maxWidth, startSize) {
   let size = startSize;
   ctx.font = `${size}px ${family}`;
@@ -139,7 +139,7 @@ export function drawCover(canvas, state) {
     paintPanel(ctx, panel.img, rect, panel, grade.filter);
   });
 
-  // Grade wash, then a vertical tint that deepens toward the title band.
+  // Grade wash, then a vertical tint deepening toward the title band.
   ctx.fillStyle = grade.wash;
   ctx.fillRect(0, 0, w, h);
   const tint = ctx.createLinearGradient(0, h * 0.3, 0, h);
@@ -151,7 +151,7 @@ export function drawCover(canvas, state) {
   // Thin white poster frame.
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
   ctx.lineWidth = Math.max(3, w * 0.006);
-  ctx.strokeRect(w * 0.014, h * 0.014, w * 0.972, h * 0.972);
+  ctx.strokeRect(w * 0.014, h * 0.014, w * 0.972, w * 0.972 * (h / w));
 
   // Title band fading up from the bottom edge.
   const bandH = h * 0.20;
